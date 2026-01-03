@@ -57,18 +57,20 @@ def get_next_idea_buttons(next_ideas, font):
 
 def main():
     program_size = (800, 600)
-    size = (800, 800)
+    size = (1600, 900)
     screen = pygame.display.set_mode(size)
     clock = pygame.time.Clock()
     running = True
 
+    computer = pygame.Surface((800, 800))
+    background = pygame.image.load("background.png").convert_alpha()
     font = pygame.font.Font(None, 30)
     text_input = TextInput(pygame.Rect(5, 690, 790, 40), font, "(type...)")
 
     prompt = get_prompt()   
 
     client = genai.Client()
-    chat = client.chats.create(model="gemini-2.5-flash", config=types.GenerateContentConfig(system_instruction=prompt))
+    chat = client.chats.create(model="gemini-2.5-flash-lite", config=types.GenerateContentConfig(system_instruction=prompt))
 
     program = get_default_program()
     instructions = program.get_instructions()
@@ -93,12 +95,13 @@ def main():
                 Input.key_up(pygame.key.name(event.key))
             elif event.type == pygame.MOUSEMOTION:
                 pos = pygame.mouse.get_pos()
+                pos = (pos[0] - 31, pos[1] - 45)
 
                 for b in next_idea_buttons:
                     b.check_hovered(pos)
-            
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
+                pos = (pos[0] - 31, pos[1] - 45)
                 
                 text_input.check_focused(pos)
                 for b in next_idea_buttons:
@@ -115,7 +118,7 @@ def main():
                             break
 
         # draw
-        screen.fill((0, 0, 0))
+        screen.blit(background, (0, 0))
 
         Render.clear_screen()
 
@@ -127,17 +130,20 @@ def main():
             instructions = program.get_instructions()
             next_idea_buttons = get_next_idea_buttons(program.get_next_idea(), font)
 
+        computer.fill((0, 0, 0))
         surf = pygame.transform.scale(Render.screen, program_size)
-        screen.blit(surf, (0, 0))
+        computer.blit(surf, (0, 0))
 
         # Draw UI
         instruction_surf = font.render(instructions, False, (255, 255, 255))
-        screen.blit(instruction_surf, (5, 605))
+        computer.blit(instruction_surf, (5, 605))
 
         for b in next_idea_buttons:
-            b.draw(screen)
+            b.draw(computer)
 
-        text_input.draw(screen)
+        text_input.draw(computer)
+
+        screen.blit(computer, (31, 45))
 
         pygame.display.flip()
         dt = clock.tick(60)

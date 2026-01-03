@@ -8,6 +8,7 @@ class Button:
         self.font = font
 
         self.hovered = False
+        self.hover_loc = False
 
     def draw(self, surface):
         pygame.draw.rect(surface, (255, 255, 255), self.rect, 0 if self.hovered else 1)
@@ -44,7 +45,6 @@ class TextInput:
             return False
 
         key_name = pygame.key.name(key_event.key)
-        print(key_name)
         if key_name == 'backspace':
             if self.text:
                 self.text = self.text[:-1]
