@@ -1,7 +1,8 @@
 import pygame
+import numpy as np
 import math
 import random
-import numpy as np
+from collections import defaultdict
 
 pygame.mixer.pre_init(44100, -16, 1, 512)
 pygame.init()
@@ -30,15 +31,16 @@ class Render:
         Render.screen.fill((0, 0, 0))
 
 class Input:
-    queue = []
+    key_pressed = defaultdict(bool)
 
-    def get_events():
-        q = Input.queue
-        Input.queue = []
-        return q
+    def is_key_pressed(key):
+        return Input.key_pressed[key]
 
-    def add_event(event):
-        Input.queue.append(event)
+    def key_down(key):
+        Input.key_pressed[key] = True
+
+    def key_up(key):
+        del Input.key_pressed[key]
 
 class Sound:
     def _generate_tone(frequency, duration, sample_rate=44100, volume=0.1):
@@ -61,92 +63,19 @@ class Sound:
 
 class Program:
     def __init__(self):
-        self.time = 0.0
-        self.bones = []
-        self.pulse = 0.0
-        self.bone_count = 15
-        self.glitch_y = 0
-        self.corruption = 0.0
-
-        # Skeleton structure: center point and radiating limbs
-        for i in range(self.bone_count):
-            self.bones.append({
-                "angle": (i / self.bone_count) * 6.28,
-                "length": random.randint(40, 100),
-                "segments": random.randint(2, 4),
-                "offset": random.random() * 6.28
-            })
+        pass
 
     def update(self, dt):
-        self.time += dt
-        self.pulse = math.sin(self.time * 3) * 0.5 + 0.5
-        
-        # Listen for keystrokes to "awaken" the marrow
-        events = Input.get_events()
-        if events:
-            self.corruption += 0.05
-            Sound.play_tone(100 + int(self.corruption * 500), 0.05)
-            self.glitch_y = random.randint(0, 299)
-            
-        if self.corruption > 1.0:
-            self.corruption = 1.0
+        pass
 
     def draw(self):
-        cx, cy = 200, 150
-        
-        # Draw the "Skull" (The Core)
-        radius = 20 + int(math.sin(self.time * 2) * 2)
-        Render.draw_circle(cx, cy, radius)
-        # Eye sockets
-        Render.draw_circle(cx - 8, cy - 2, 4, True)
-        Render.draw_circle(cx + 8, cy - 2, 4, True)
-        
-        # Draw the ribcage/limbs
-        for b in self.bones:
-            angle = b["angle"] + math.sin(self.time + b["offset"]) * 0.2
-            curr_x, curr_y = cx, cy
-            
-            # Move out from center
-            curr_x += math.cos(angle) * radius
-            curr_y += math.sin(angle) * radius
-            
-            for s in range(b["segments"]):
-                seg_len = b["length"] / b["segments"]
-                # Swaying movement
-                next_angle = angle + math.sin(self.time * 2 + s) * (0.1 + self.corruption)
-                next_x = curr_x + math.cos(next_angle) * seg_len
-                next_y = curr_y + math.sin(next_angle) * seg_len
-                
-                Render.draw_line(int(curr_x), int(curr_y), int(next_x), int(next_y))
-                
-                # Joint markers
-                Render.draw_circle(int(next_x), int(next_y), 2, True)
-                
-                curr_x, curr_y = next_x, next_y
-                angle = next_angle
-
-        # Nightmare effects
-        if self.corruption > 0.3:
-            for _ in range(int(self.corruption * 10)):
-                rx = random.randint(0, 399)
-                ry = random.randint(0, 299)
-                Render.draw_text("CALCIUM", rx, ry)
-
-        # Progression text
-        if self.corruption < 0.9:
-            Render.draw_text("THE BONES REMEMBER", 120, 20)
-        else:
-            Render.draw_text("THE MARROW SPEAKS", 120 + int(math.sin(self.time * 20)*2), 20)
-            
-        # Screen glitch
-        if random.random() < self.corruption:
-            Render.draw_line(0, self.glitch_y, 399, self.glitch_y)
+        pass
 
     def get_instructions(self):
-        return "Press keys to rattle the cage and awaken the marrow."
+        return ""
 
     def get_next_idea(self):
-        return ["Fossilize", "Dancing limbs", "Shadow cast", "Dust ritual"]
+        return []
 
 def main():
     size = (800, 600)
@@ -165,12 +94,9 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
-                else:
-                    Input.add_event(pygame.key.name(event.key))
-                    print(pygame.key.name(event.key))
-                
+                Input.key_down(pygame.key.name(event.key))
+            elif event.type == pygame.KEYUP:
+                Input.key_up(pygame.key.name(event.key))
 
         program.update(dt / 1000)
 
