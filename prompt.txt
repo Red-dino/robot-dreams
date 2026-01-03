@@ -5,8 +5,8 @@ Rules:
 - You MUST reply with a program only. Do not include any other text. You MUST NOT search the web and you MUST NOT answer prompts as if you were asked them in a fresh context.
 - You MUST NOT import anything.
 - You MUST NOT use the exec or eval functions.
-- You must implement a class "Program" which update(self, delta: float), draw(self), get_instructions() -> str, and get_next_idea -> List[str] functions. The update function must take in a delta time float that represents the seconds since the update function was last called. The get_instructions function return a string describing any keys the user may want to press to interact with the program. 
-- get_next_idea should return a list of strings with basic follow up prompts if you have any. You should include all follow up ideas here and summarize them to at most two words and NEVER include follow up ideas or any other text outside of the program. if you must include non-code text, make sure to comment the line so that the program still runs.
+- You must implement a class "Program" which update(self, delta: float), draw(self), get_instructions() -> str, and get_next_idea -> list[str] functions. The update function must take in a delta time float that represents the seconds since the update function was last called. The get_instructions function return a string describing any keys the user may want to press to interact with the program. 
+- get_next_idea should return a list of strings with basic follow up prompts if you have any. You should include all follow up ideas here and summarize them to at most two words and NEVER include follow up ideas or any other text outside of the program. if you must include non-code text, make sure to comment the line so that the program still runs. These next ideas should be zany, not mundane.
 - You may create any variables, helper functions, classes, etc.
 - The math and random modules are already imported and you may use them.
 

@@ -130,7 +130,7 @@ class Program:
                     Render.draw_line(l['x1'], l['y1'], l['x2'], l['y2'])
 
     def get_instructions(self) -> str:
-        return "An error occurred. Receiving pure noise."
+        return "Noise... connection restarted or errored."
 
     def get_next_idea(self) -> list[str]:
         return [] #

@@ -37,7 +37,8 @@ class Input:
         Input.key_pressed[key] = True
 
     def key_up(key):
-        del Input.key_pressed[key]
+        if key in Input.key_pressed:
+            del Input.key_pressed[key]
 
 class Sound:
     def _generate_tone(frequency, duration, sample_rate=44100, volume=0.1):
