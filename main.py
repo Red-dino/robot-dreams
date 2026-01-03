@@ -70,7 +70,7 @@ def main():
     prompt = get_prompt()   
 
     client = genai.Client()
-    chat = client.chats.create(model="gemini-2.5-flash-lite", config=types.GenerateContentConfig(system_instruction=prompt))
+    chat = client.chats.create(model="gemini-2.5-flash", config=types.GenerateContentConfig(system_instruction=prompt))
 
     program = get_default_program()
     instructions = program.get_instructions()
@@ -126,6 +126,8 @@ def main():
             program.update(dt / 1000)
             program.draw()
         except:
+            import traceback
+            traceback.print_exc()
             program = get_default_program()
             instructions = program.get_instructions()
             next_idea_buttons = get_next_idea_buttons(program.get_next_idea(), font)
