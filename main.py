@@ -6,149 +6,151 @@ from ui import Button, TextInput
 from google import genai
 from google.genai import types
 
-pygame.mixer.pre_init(44100, -16, 1, 512)
-pygame.init()
+class Main:
 
-def get_prompt():
-    string = ''
-    with open("prompt.txt", "r") as f:
-        string = f.read()
-    return string
+    def __init__(self):
+        pygame.mixer.pre_init(44100, -16, 1, 512)
+        pygame.init()
 
-def write_program(text):
-    name = str(int(time.time()))
-    text = text.replace('```python', '')
-    text = text.replace('```', '')
-    with open("generated/" + name + ".py", 'w') as f:
-        f.write('import math\n')
-        f.write('import random\n')
-        f.write('from generated.helpers import Render, Input, Sound\n\n')
+        self.font = pygame.font.Font(None, 30)
 
-        f.write(text)
-    return name
+        self.client = genai.Client()
+        self.prompt = self.get_prompt()
+        self.load_default_program()
+        self.get_new_chat()
 
-def get_default_program():
-    module = importlib.import_module("generated.noise")
-    return module.Program()
+    # Disk utils.
+    def get_prompt(self):
+        string = ''
+        with open("prompt.txt", "r") as f:
+            string = f.read()
+        return string
 
-def get_and_load_program(chat, prompt):
-    try:
-        response = chat.send_message(prompt)
-        name = write_program(response.text)
-        # name = 'example'
-        module = importlib.import_module("generated." + name)
-        program = module.Program()
-        return program
-    except:
-        import traceback
-        traceback.print_exc()
-        return get_default_program()
+    def write_program(self, text):
+        name = str(int(time.time()))
+        text = text.replace('```python', '')
+        text = text.replace('```', '')
+        with open("generated/" + name + ".py", 'w') as f:
+            f.write('import math\n')
+            f.write('import random\n')
+            f.write('from generated.helpers import Render, Input, Sound\n\n')
 
-def get_next_idea_buttons(next_ideas, font):
-    ideas = ["reboot", "keep dreaming"]
-    ideas.extend(next_ideas)
+            f.write(text)
+        return name
 
-    buttons = []
-    x = 5
-    for i in ideas:
-        buttons.append(Button(i.lower(), pygame.Rect(x, 640, 795 / len(ideas) - 5, 40), font))
-        x += 795 / len(ideas)
-    return buttons
+    # LLM utils.
+    def update_program_metadata(self):
+        self.instructions = self.program.get_instructions()
+        self.next_idea_buttons = self.get_next_idea_buttons(self.program.get_next_idea(), self.font)
 
-def main():
-    program_size = (800, 600)
-    size = (1600, 900)
-    screen = pygame.display.set_mode(size)
-    clock = pygame.time.Clock()
-    running = True
+    def load_default_program(self):
+        module = importlib.import_module("generated.noise")
+        self.program = module.Program()
+        self.update_program_metadata()
 
-    computer = pygame.Surface((800, 800))
-    background = pygame.image.load("background.png").convert_alpha()
-    font = pygame.font.Font(None, 30)
-    text_input = TextInput(pygame.Rect(5, 690, 790, 40), font, "(type...)")
-
-    prompt = get_prompt()   
-
-    client = genai.Client()
-    chat = client.chats.create(model="gemini-2.5-flash", config=types.GenerateContentConfig(system_instruction=prompt))
-
-    program = get_default_program()
-    instructions = program.get_instructions()
-    next_idea_buttons = get_next_idea_buttons(program.get_next_idea(), font)
-
-    dt = 0
-    while running:
-        # update
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if text_input.is_focused():
-                    enter = text_input.take_input(event)
-                    if enter:
-                        program = get_and_load_program(chat, text_input.text)
-                        instructions = program.get_instructions()
-                        next_idea_buttons = get_next_idea_buttons(program.get_next_idea(), font)
-                else:
-                    Input.key_down(pygame.key.name(event.key))
-            elif event.type == pygame.KEYUP:
-                Input.key_up(pygame.key.name(event.key))
-            elif event.type == pygame.MOUSEMOTION:
-                pos = pygame.mouse.get_pos()
-                pos = (pos[0] - 31, pos[1] - 45)
-
-                for b in next_idea_buttons:
-                    b.check_hovered(pos)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                pos = (pos[0] - 31, pos[1] - 45)
-                
-                text_input.check_focused(pos)
-                for b in next_idea_buttons:
-                    if b.check_hovered(pos):
-                        if b.text == 'reboot':
-                            program = get_default_program()
-                            instructions = program.get_instructions()
-                            next_idea_buttons = get_next_idea_buttons(program.get_next_idea(), font)
-                            chat = client.chats.create(model="gemini-2.5-flash", config=types.GenerateContentConfig(system_instruction=prompt))                
-                        else:
-                            program = get_and_load_program(chat, b.text)
-                            instructions = program.get_instructions()
-                            next_idea_buttons = get_next_idea_buttons(program.get_next_idea(), font)
-                            break
-
-        # draw
-        screen.blit(background, (0, 0))
-
-        Render.clear_screen()
-
+    def load_new_program(self, chat, prompt):
         try:
-            program.update(dt / 1000)
-            program.draw()
+            response = chat.send_message(prompt)
+            name = self.write_program(response.text)
+            # name = 'example'
+            module = importlib.import_module("generated." + name)
+            self.program = module.Program()
+            self.update_program_metadata()
         except:
             import traceback
             traceback.print_exc()
-            program = get_default_program()
-            instructions = program.get_instructions()
-            next_idea_buttons = get_next_idea_buttons(program.get_next_idea(), font)
+            load_default_program()
 
-        computer.fill((0, 0, 0))
-        surf = pygame.transform.scale(Render.screen, program_size)
-        computer.blit(surf, (0, 0))
+    def get_new_chat(self, model="gemini-2.5-flash"):
+        self.chat = self.client.chats.create(model=model, config=types.GenerateContentConfig(system_instruction=self.prompt))
 
-        # Draw UI
-        instruction_surf = font.render(instructions, False, (255, 255, 255))
-        computer.blit(instruction_surf, (5, 605))
+    # UI utils.
+    def get_next_idea_buttons(self, next_ideas, font):
+        ideas = ["reboot", "keep dreaming"]
+        ideas.extend(next_ideas)
 
-        for b in next_idea_buttons:
-            b.draw(computer)
+        buttons = []
+        x = 5
+        for i in ideas:
+            buttons.append(Button(i.lower(), pygame.Rect(x, 640, 795 / len(ideas) - 5, 40), font))
+            x += 795 / len(ideas)
+        return buttons
 
-        text_input.draw(computer)
+    def run(self):
+        program_size = (800, 600)
+        size = (1600, 900)
+        screen = pygame.display.set_mode(size)
+        clock = pygame.time.Clock()
+        running = True
 
-        screen.blit(computer, (31, 45))
+        computer = pygame.Surface((800, 800))
+        background = pygame.image.load("background.png").convert_alpha()
+        text_input = TextInput(pygame.Rect(5, 690, 790, 40), self.font, "(type...)")
 
-        pygame.display.flip()
-        dt = clock.tick(60)
+        dt = 0
+        while running:
+            # update
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if text_input.is_focused():
+                        enter = text_input.take_input(event)
+                        if enter:
+                            self.load_new_program(self.chat, text_input.text)
+                    else:
+                        Input.key_down(pygame.key.name(event.key))
+                elif event.type == pygame.KEYUP:
+                    Input.key_up(pygame.key.name(event.key))
+                elif event.type == pygame.MOUSEMOTION:
+                    pos = pygame.mouse.get_pos()
+                    pos = (pos[0] - 31, pos[1] - 45)
+
+                    for b in self.next_idea_buttons:
+                        b.check_hovered(pos)
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    pos = (pos[0] - 31, pos[1] - 45)
+                    
+                    text_input.check_focused(pos)
+                    for b in self.next_idea_buttons:
+                        if b.check_hovered(pos):
+                            if b.text == 'reboot':
+                                self.load_default_program()
+                                self.get_new_chat()              
+                            else:
+                                self.load_new_program(chat, b.text)
+
+            # draw
+            screen.blit(background, (0, 0))
+
+            Render.clear_screen()
+
+            try:
+                self.program.update(dt / 1000)
+                self.program.draw()
+            except:
+                import traceback
+                traceback.print_exc()
+                self.load_default_program()
+
+            computer.fill((0, 0, 0))
+            surf = pygame.transform.scale(Render.screen, program_size)
+            computer.blit(surf, (0, 0))
+
+            # Draw UI
+            instruction_surf = self.font.render(self.instructions, False, (255, 255, 255))
+            computer.blit(instruction_surf, (5, 605))
+
+            for b in self.next_idea_buttons:
+                b.draw(computer)
+
+            text_input.draw(computer)
+
+            screen.blit(computer, (31, 45))
+
+            pygame.display.flip()
+            dt = clock.tick(60)
 
 if __name__ == "__main__":
-    main()
+    Main().run()
