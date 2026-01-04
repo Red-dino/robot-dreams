@@ -1,10 +1,12 @@
 import pygame
 import importlib
 import time
-from generated.helpers import Render, Input, Sound
-from ui import Button, TextInput
 from google import genai
 from google.genai import types
+
+from generated.helpers import Render, Input, Sound
+from ui import Button, TextInput
+from util import DiskUtil, LlmUtil
 
 class Main:
 
@@ -15,57 +17,27 @@ class Main:
         self.font = pygame.font.Font(None, 30)
 
         self.client = genai.Client()
-        self.prompt = self.get_prompt()
-        self.load_default_program()
-        self.get_new_chat()
+        self.system_instructions = DiskUtil.read_system_instructions()
+        self._create_new_chat()
+        self._load_default_program()
 
-    # Disk utils.
-    def get_prompt(self):
-        string = ''
-        with open("prompt.txt", "r") as f:
-            string = f.read()
-        return string
-
-    def write_program(self, text):
-        name = str(int(time.time()))
-        text = text.replace('```python', '')
-        text = text.replace('```', '')
-        with open("generated/" + name + ".py", 'w') as f:
-            f.write('import math\n')
-            f.write('import random\n')
-            f.write('from generated.helpers import Render, Input, Sound\n\n')
-
-            f.write(text)
-        return name
-
-    # LLM utils.
-    def update_program_metadata(self):
+    def _load_program(self, program):
+        self.program = program
         self.instructions = self.program.get_instructions()
-        self.next_idea_buttons = self.get_next_idea_buttons(self.program.get_next_idea(), self.font)
+        self.next_idea_buttons = self._get_next_idea_buttons(self.program.get_next_idea(), self.font)
 
-    def load_default_program(self):
-        module = importlib.import_module("generated.noise")
-        self.program = module.Program()
-        self.update_program_metadata()
+    def _load_default_program(self):
+        self._load_program(LlmUtil.load_default_program())
 
-    def load_new_program(self, chat, prompt):
-        try:
-            response = chat.send_message(prompt)
-            name = self.write_program(response.text)
-            # name = 'example'
-            module = importlib.import_module("generated." + name)
-            self.program = module.Program()
-            self.update_program_metadata()
-        except:
-            import traceback
-            traceback.print_exc()
-            load_default_program()
+    def _load_new_program(self, prompt):
+        name = "".join(filter(str.isalnum, prompt)) + str(int(time.time()))
+        program = LlmUtil.load_new_program(self.chat, prompt, name)
+        self._load_program(program)
 
-    def get_new_chat(self, model="gemini-2.5-flash"):
-        self.chat = self.client.chats.create(model=model, config=types.GenerateContentConfig(system_instruction=self.prompt))
+    def _create_new_chat(self):
+        self.chat = LlmUtil.create_new_chat(self.client, self.system_instructions)
 
-    # UI utils.
-    def get_next_idea_buttons(self, next_ideas, font):
+    def _get_next_idea_buttons(self, next_ideas, font):
         ideas = ["reboot", "keep dreaming"]
         ideas.extend(next_ideas)
 
@@ -97,7 +69,7 @@ class Main:
                     if text_input.is_focused():
                         enter = text_input.take_input(event)
                         if enter:
-                            self.load_new_program(self.chat, text_input.text)
+                            self._load_new_program(text_input.text)
                     else:
                         Input.key_down(pygame.key.name(event.key))
                 elif event.type == pygame.KEYUP:
@@ -116,10 +88,10 @@ class Main:
                     for b in self.next_idea_buttons:
                         if b.check_hovered(pos):
                             if b.text == 'reboot':
-                                self.load_default_program()
-                                self.get_new_chat()              
+                                self._load_default_program()
+                                self._create_new_chat()                                
                             else:
-                                self.load_new_program(chat, b.text)
+                                self._load_new_program(b.text)
 
             # draw
             screen.blit(background, (0, 0))
@@ -132,7 +104,7 @@ class Main:
             except:
                 import traceback
                 traceback.print_exc()
-                self.load_default_program()
+                self._load_default_program()
 
             computer.fill((0, 0, 0))
             surf = pygame.transform.scale(Render.screen, program_size)
