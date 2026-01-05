@@ -57,7 +57,7 @@ class Main:
 
         computer = pygame.Surface((800, 800))
         background = pygame.image.load("background.png").convert_alpha()
-        text_input = TextInput(pygame.Rect(5, 690, 790, 40), self.font, "(type...)")
+        text_input = TextInput(pygame.Rect(5, 690, 790, 40), self.font, "(click to type...)")
 
         dt = 0
         while running:

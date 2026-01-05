@@ -31,7 +31,7 @@ class TextInput:
 
     def draw(self, surface):
         pygame.draw.rect(surface, (255, 255, 255), self.rect, 0 if self.focused else 1)
-        text_surf = self.font.render(self.text if self.text else self.empty_string, False, (0, 0, 0) if self.focused else (255, 255, 255))
+        text_surf = self.font.render(self.text if self.text or self.focused else self.empty_string, False, (0, 0, 0) if self.focused else (255, 255, 255))
         surface.blit(text_surf, self.rect.topleft)
 
     def check_focused(self, mouse_pos):

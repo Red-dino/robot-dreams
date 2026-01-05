@@ -28,6 +28,7 @@ class LlmUtil:
     def load_new_program(chat, prompt, name):
         try:
             response = chat.send_message(prompt)
+            print(response)
             DiskUtil.write_program(name, response.text)
             module = importlib.import_module("generated." + name)
             return module.Program()
