@@ -1,4 +1,5 @@
 import importlib
+from concurrent.futures import ThreadPoolExecutor
 from google.genai import types
 
 class DiskUtil:
@@ -22,10 +23,11 @@ class DiskUtil:
 class LlmUtil:
 
     def load_default_program():
-        module = importlib.import_module("generated.noise")
+        module = importlib.import_module("generated.mesh")
         return module.Program()
 
     def load_new_program(chat, prompt, name):
+        print("loading program")
         try:
             response = chat.send_message(prompt)
             print(response)
@@ -39,3 +41,10 @@ class LlmUtil:
 
     def create_new_chat(client, system_instructions, model="gemini-2.5-flash"):
         return client.chats.create(model=model, config=types.GenerateContentConfig(system_instruction=system_instructions))
+
+    def load_new_program_async(chat, prompt, name):
+        executor = ThreadPoolExecutor(max_workers=1)
+        return executor.submit(LlmUtil.load_new_program, chat, prompt, name)
+        
+        
+        

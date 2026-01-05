@@ -21,6 +21,8 @@ class Main:
         self._create_new_chat()
         self._load_default_program()
 
+        self.program_future = None
+
     def _load_program(self, program):
         self.program = program
         self.instructions = self.program.get_instructions()
@@ -29,10 +31,25 @@ class Main:
     def _load_default_program(self):
         self._load_program(LlmUtil.load_default_program())
 
-    def _load_new_program(self, prompt):
-        name = "".join(filter(str.isalnum, prompt)) + str(int(time.time()))
-        program = LlmUtil.load_new_program(self.chat, prompt, name)
-        self._load_program(program)
+    def _load_new_program_async(self, prompt):
+        if self.program_future:
+            return
+
+        print("loading a program")
+
+        self.text_input.focused = False
+
+        name = str(int(time.time())) + "".join(filter(str.isalnum, prompt))
+        self.program_future = LlmUtil.load_new_program_async(self.chat, prompt, name)
+
+    def _check_program_future(self):
+        if not self.program_future:
+            return
+
+        if self.program_future.done():
+            program = self.program_future.result()
+            self._load_program(program)
+            self.program_future = None
 
     def _create_new_chat(self):
         self.chat = LlmUtil.create_new_chat(self.client, self.system_instructions)
@@ -48,6 +65,33 @@ class Main:
             x += 795 / len(ideas)
         return buttons
 
+    def _handle_ui_event(self, event):
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if self.text_input.is_focused():
+                enter = self.text_input.take_input(event)
+                if enter:
+                    self._load_new_program_async(self.text_input.text)
+        elif event.type == pygame.MOUSEMOTION:
+            pos = pygame.mouse.get_pos()
+            pos = (pos[0] - 31, pos[1] - 45)
+
+            for b in self.next_idea_buttons:
+                b.check_hovered(pos)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            pos = pygame.mouse.get_pos()
+            pos = (pos[0] - 31, pos[1] - 45)
+            
+            self.text_input.check_focused(pos)
+            for b in self.next_idea_buttons:
+                if b.check_hovered(pos):
+                    if b.text == 'reboot':
+                        self._load_default_program()
+                        self._create_new_chat()                                
+                    else:
+                        self._load_new_program_async(b.text)
+
     def run(self):
         program_size = (800, 600)
         size = (1600, 900)
@@ -57,7 +101,7 @@ class Main:
 
         computer = pygame.Surface((800, 800))
         background = pygame.image.load("background.png").convert_alpha()
-        text_input = TextInput(pygame.Rect(5, 690, 790, 40), self.font, "(click to type...)")
+        self.text_input = TextInput(pygame.Rect(5, 690, 790, 40), self.font, "(click to type...)")
 
         dt = 0
         while running:
@@ -65,33 +109,17 @@ class Main:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                elif event.type == pygame.KEYDOWN:
-                    if text_input.is_focused():
-                        enter = text_input.take_input(event)
-                        if enter:
-                            self._load_new_program(text_input.text)
-                    else:
-                        Input.key_down(pygame.key.name(event.key))
+                    return
+                if not self.program_future and self._handle_ui_event(event):
+                    return
+            
+                if event.type == pygame.KEYDOWN:
+                    Input.key_down(pygame.key.name(event.key))
                 elif event.type == pygame.KEYUP:
                     Input.key_up(pygame.key.name(event.key))
-                elif event.type == pygame.MOUSEMOTION:
-                    pos = pygame.mouse.get_pos()
-                    pos = (pos[0] - 31, pos[1] - 45)
 
-                    for b in self.next_idea_buttons:
-                        b.check_hovered(pos)
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    pos = pygame.mouse.get_pos()
-                    pos = (pos[0] - 31, pos[1] - 45)
-                    
-                    text_input.check_focused(pos)
-                    for b in self.next_idea_buttons:
-                        if b.check_hovered(pos):
-                            if b.text == 'reboot':
-                                self._load_default_program()
-                                self._create_new_chat()                                
-                            else:
-                                self._load_new_program(b.text)
+            if self.program_future:
+                self._check_program_future()
 
             # draw
             screen.blit(background, (0, 0))
@@ -111,13 +139,17 @@ class Main:
             computer.blit(surf, (0, 0))
 
             # Draw UI
-            instruction_surf = self.font.render(self.instructions, False, (255, 255, 255))
-            computer.blit(instruction_surf, (5, 605))
+            if self.program_future:
+                loading_surf = self.font.render("processing dream signal...", False, (255, 255, 255))
+                computer.blit(loading_surf, (5, 605))
+            else:
+                instruction_surf = self.font.render(self.instructions, False, (255, 255, 255))
+                computer.blit(instruction_surf, (5, 605))
 
-            for b in self.next_idea_buttons:
-                b.draw(computer)
+                for b in self.next_idea_buttons:
+                    b.draw(computer)
 
-            text_input.draw(computer)
+                self.text_input.draw(computer)
 
             screen.blit(computer, (31, 45))
 
