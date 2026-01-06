@@ -55,8 +55,67 @@ class TextInput:
         elif len(key_name) == 1:
             self.text += key_name
         return False
-        
-        
 
+class OptionMenu:
+
+    def __init__(self, rect, font, options):
+        self.rect = rect
+        self.font = font
+        self.options = options
+
+        self.surf = pygame.Surface(rect.size)
+        self._build_surfaces()
+        self._recalculate_hover()
+
+    def _build_surfaces(self):
+        self.header_surf = self.font.render("Saved dreams:", False, (255, 255, 255))
+        self.options_surf = pygame.Surface((self.rect.width, self.header_surf.get_height() * (1 + len(self.options))))
+
+        y = 0
+        for option in self.options:
+            option_surf = self.font.render(option, False, (255, 255, 255))
+            self.options_surf.blit(option_surf, (0, y))
+            y += self.header_surf.get_height()
+
+    def draw(self, surface):
+        self.surf.fill((0, 0, 0))
         
-    
+        self.surf.blit(self.options_surf, (0, self.header_surf.get_height()))
+
+        if self.hovered_option_i is not None:
+            hover_rect = pygame.Rect(0, self.header_surf.get_height() * (self.hovered_option_i + 1), self.rect.width, self.header_surf.get_height())
+            pygame.draw.rect(self.surf, (255, 255, 255), hover_rect)
+            hovered_option = self.font.render(self.options[self.hovered_option_i], False, (0, 0, 0))
+            self.surf.blit(hovered_option, hover_rect)
+
+        pygame.draw.rect(self.surf, (0, 0, 0), (0, 0, self.rect.width, self.header_surf.get_height()))
+        self.surf.blit(self.header_surf, (0, 0))
+
+        surface.blit(self.surf, self.rect)
+
+    def _recalculate_hover(self):
+        self.hovered_option_i = None
+
+        pos = pygame.mouse.get_pos()
+
+        if not self.rect.collidepoint(pos):
+            return
+
+        adjusted_y = pos[1] - self.rect.y - self.header_surf.get_height()
+
+        i = adjusted_y // self.header_surf.get_height()
+        if i >= 0 and i < len(self.options) and adjusted_y < self.rect.height:
+            self.hovered_option_i = i
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEMOTION:
+            self._recalculate_hover()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            self._recalculate_hover()
+            if self.hovered_option_i is not None:
+                return self.options[self.hovered_option_i]
+
+        return None
+
+
+

@@ -1,6 +1,7 @@
 import importlib
 from concurrent.futures import ThreadPoolExecutor
 from google.genai import types
+from pathlib import Path
 
 class DiskUtil:
 
@@ -20,15 +21,24 @@ class DiskUtil:
 
             f.write(text)
 
+    def get_saved_program_names():
+        path = Path("generated")
+
+        files = [f.name[:-3] for f in path.glob('*.py') if f.is_file() and f.name not in {'mesh.py', 'helpers.py', '__init__.py'}]
+        return files
+
 class LlmUtil:
 
-    def load_default_program():
-        module = importlib.import_module("generated.mesh")
+    def load_local_program(name):
+        module = importlib.import_module("generated." + name)
         return module.Program()
 
+    def load_default_program():
+        return LlmUtil.load_local_program("mesh")
+
     def load_new_program(chat, prompt, name):
-        print("loading program")
         try:
+            print("loading program, request: ", prompt)
             response = chat.send_message(prompt)
             print(response)
             DiskUtil.write_program(name, response.text)
