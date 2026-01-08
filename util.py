@@ -11,6 +11,12 @@ class DiskUtil:
             string = f.read()
         return string
 
+    def read_starting_text():
+        string = ''
+        with open("email.txt", "r") as f:
+            string = f.read()
+        return string
+
     def write_program(name, text):
         text = text.replace('```python', '')
         text = text.replace('```', '')

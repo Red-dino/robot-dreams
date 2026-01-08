@@ -6,25 +6,31 @@ from google import genai
 from google.genai import types
 
 from generated.helpers import Render, Input, Sound
-from ui import Button, TextInput, OptionMenu
+from ui import Button, TextInput, OptionMenu, TextBox
 from util import DiskUtil, LlmUtil
 
 class State(Enum):
     builder = 0
     loading_program = 1
     program_menu = 2
+    start = 3
 
 class Main:
 
     def __init__(self):
         pygame.mixer.pre_init(44100, -16, 1, 512)
         pygame.init()
+        pygame.display.set_caption("Robot Dreams")
+        pygame.display.set_icon(pygame.image.load("icon.png"))
 
         self.font = pygame.font.Font(None, 30)
+
         self.builder_button = Button("visualizer", pygame.Rect(0, 760, 400, 40), self.font)
         self.program_menu_button = Button("logged dreams", pygame.Rect(400, 760, 400, 40), self.font)
 
-        self._set_state(State.builder)
+        self.start_text_box = TextBox(DiskUtil.read_starting_text().split("\n"), pygame.Rect(0, 0, 800, 800), self.font)
+
+        self._set_state(State.start)
 
         self.client = genai.Client()
         self.system_instructions = DiskUtil.read_system_instructions()
@@ -165,6 +171,10 @@ class Main:
                     if name is not None:
                         self._load_program(LlmUtil.load_local_program(name))
                         self._set_state(State.builder)
+                elif self.state == State.start:
+                    if event.type == pygame.KEYDOWN:
+                        self._set_state(State.builder)
+                    
 
             if self.state == State.loading_program:
                 self._check_program_future()
@@ -175,6 +185,9 @@ class Main:
             Render.clear_screen()
 
             computer.fill((0, 0, 0))
+
+            if self.state == State.start:
+                self.start_text_box.draw(computer)
 
             if self.state == State.builder or self.state == State.loading_program:
                 try:

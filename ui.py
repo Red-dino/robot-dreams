@@ -117,5 +117,27 @@ class OptionMenu:
 
         return None
 
+class TextBox:
+
+    def __init__(self, text, rect, font):
+        self.text = text
+        self.rect = rect
+        self.font = font
+
+        self._draw_surface()
+
+    def _draw_surface(self):
+        self.surf = pygame.Surface(self.rect.size)
+
+        y = 0
+        for line in self.text:
+            line_surf = self.font.render(line, False, (255, 255, 255))
+            self.surf.blit(line_surf, (0, y))
+            y += line_surf.get_height()
+
+    def draw(self, surface):
+        surface.blit(self.surf, (0, 0))
+        
+
 
 
