@@ -82,11 +82,11 @@ class Main:
         return buttons
 
     def _open_program_menu(self):
-        self.program_menu = OptionMenu(pygame.Rect(31, 45, 800, 760), self.font, DiskUtil.get_saved_program_names())
+        self.program_menu = OptionMenu(pygame.Rect(39, 37, 800, 760), self.font, DiskUtil.get_saved_program_names())
 
     def _recalculate_toggle_button_hover(self):
         pos = pygame.mouse.get_pos()
-        pos = (pos[0] - 31, pos[1] - 45)
+        pos = (pos[0] - 39, pos[1] - 37)
         
         self.builder_button.hovered = self.state == State.builder or self.builder_button.check_hovered(pos) 
         self.program_menu_button.hovered = self.state == State.program_menu or self.program_menu_button.check_hovered(pos)
@@ -111,13 +111,13 @@ class Main:
                     self._load_new_program_async(self.text_input.text)
         elif event.type == pygame.MOUSEMOTION:
             pos = pygame.mouse.get_pos()
-            pos = (pos[0] - 31, pos[1] - 45)
+            pos = (pos[0] - 39, pos[1] - 37)
 
             for b in self.next_idea_buttons:
                 b.check_hovered(pos)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             pos = pygame.mouse.get_pos()
-            pos = (pos[0] - 31, pos[1] - 45)
+            pos = (pos[0] - 39, pos[1] - 37)
             
             self.text_input.check_focused(pos)
             for b in self.next_idea_buttons:
@@ -204,7 +204,7 @@ class Main:
                 self.builder_button.draw(computer)
                 self.program_menu_button.draw(computer)
 
-            screen.blit(computer, (31, 45))
+            screen.blit(computer, (39, 37))
 
             if self.state == State.program_menu:
                 self.program_menu.draw(screen)
