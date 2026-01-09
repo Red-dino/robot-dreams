@@ -108,13 +108,12 @@ class Main:
                 self._set_state(State.program_menu)
 
     def _handle_builder_event(self, event):
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN:
             if self.text_input.is_focused():
                 enter = self.text_input.take_input(event)
                 if enter:
                     self._load_new_program_async(self.text_input.text)
+                return True
         elif event.type == pygame.MOUSEMOTION:
             pos = pygame.mouse.get_pos()
             pos = (pos[0] - 39, pos[1] - 37)
@@ -133,6 +132,7 @@ class Main:
                         self._create_new_chat()                                
                     else:
                         self._load_new_program_async(b.text)
+        return False
 
     def _handle_game_event(self, event):
         if event.type == pygame.KEYDOWN:
